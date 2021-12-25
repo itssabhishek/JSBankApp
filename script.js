@@ -77,11 +77,10 @@ const displayMovements = function (movements) {
   });
 };
 
-const calcDisplayBalance = function (movements) {
-  const balance = movements.reduce((acc, mov) => acc + mov, 0);
-  labelBalance.textContent = ` ${balance}💶`;
+const calcDisplayBalance = function (acc) {
+  acc.balance = acc.movements.reduce((acc, mov) => acc + mov, 0);
+  labelBalance.textContent = ` ${acc.balance}💶`;
 };
-calcDisplayBalance(account1.movements);
 
 const calcDisplaySummary = function (acc) {
   const incomes = acc.movements
@@ -116,13 +115,22 @@ const createUsernames = function (accs) {
 
 createUsernames(accounts);
 
-//Event Handler
+const updateUI = function (acc) {
+  //Display movements
+  displayMovements(acc.movements);
 
+  //Display balance
+  calcDisplayBalance(acc);
+
+  //Display summary
+  calcDisplaySummary(acc);
+};
+
+//Event Handler
 let currentAccount;
 btnLogin.addEventListener('click', function (e) {
   //prevent form from submitting
   e.preventDefault();
-  console.log('Login');
   currentAccount = accounts.find(
     acc => acc.username === inputLoginUsername.value
   );
@@ -136,17 +144,64 @@ btnLogin.addEventListener('click', function (e) {
 
     //Clear input field
     inputLoginUsername.value = inputLoginPin.value = '';
-    //Display movements
-    displayMovements(currentAccount.movements);
 
-    //Display balance
-    calcDisplayBalance(currentAccount.movements);
-
-    //Display summary
-    calcDisplaySummary(currentAccount);
+    updateUI(currentAccount);
   }
 });
 
+btnTransfer.addEventListener('click', function (e) {
+  e.preventDefault();
+  const amount = Number(inputTransferAmount.value);
+  const recieveAcc = accounts.find(
+    acc => acc.username === inputTransferTo.value
+  );
+
+  inputTransferAmount.value = inputTransferTo.value = '';
+
+  if (
+    amount > 0 &&
+    recieveAcc &&
+    currentAccount.balance >= amount &&
+    recieveAcc?.username !== currentAccount.username
+  ) {
+    currentAccount.movements.push(-amount);
+    recieveAcc.movements.push(amount);
+    updateUI(currentAccount);
+  }
+});
+
+btnLoan.addEventListener('click', function (e) {
+  e.preventDefault();
+
+  const amount = Number(inputLoanAmount.value);
+
+  if (amount > 0 && currentAccount.movements.some(mov => mov >= amount * 0.1)) {
+    currentAccount.movements.push(amount);
+    updateUI(currentAccount);
+  }
+  inputLoanAmount.value = '';
+});
+
+btnClose.addEventListener('click', function (e) {
+  e.preventDefault();
+
+  if (
+    inputCloseUsername.value === currentAccount.username &&
+    Number(inputClosePin.value) === currentAccount.pin
+  ) {
+    const index = accounts.findIndex(
+      acc => acc.username == currentAccount.username
+    );
+    console.log(index);
+
+    //Remove account
+    accounts.splice(index, 1);
+
+    //Hide UI
+    containerApp.style.opacity = 0;
+  }
+  inputCloseUsername.value = inputClosePin.value = '';
+});
 /////////////////////////////////////////////////
 /////////////////////////////////////////////////
 // LECTURES
